@@ -30,56 +30,54 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 
-//rutas de trabajo
-app.post('/new-user',(req,res)=>{
-    let {nombre, apaterno, amaterno, email, telefono, password}=req.body
-
-    if(!nombre.length){
+//rutas de trabajo para tabla pacientes
+app.post('/new_patient',(req,res)=>{
+    let {Nombre, Apellidos, Email, Telefono,Edad, Cumple, Genero,Direccion,Tratamiento,TSangre}=req.body
+    const generosPermitidos = ['male', 'female', 'other']
+    if(!Nombre.length){
         res.json({
-            'alert':'Falta de agregar nombre'
+            'alert':'Falta de agregar Nombre'
         })
-    }   else if(!apaterno.length){
+    }   else if(!Apellidos.length){
         res.json({
             'alert':'Falta de agregar el apellido paterno'
         })
-    }   else if(!email.length){
+    }   else if(!Email.length){
         res.json({
             'alert':'Falta de agregar el usuario'
         })
-    }   else if(!password.length){
-        res.json({
-            'alert':'Falta de agregar password'
-        })
+    }else if (!generosPermitidos.includes(Genero)){
+        res.json({ error: 'Selecciona una de las opciones de genero'
+    })
     }
 
-    const usuarios = collection(db, 'usuarios')
+    const pacientes = collection(db, 'pacientes')
 
-    getDoc(doc(usuarios,email)).then(user =>{
-        if(user.exists()){
+    getDoc(doc(pacientes,Email)).then(patient =>{
+        if(patient.exists()){
             res.json({
                 'alert':'El usuario ya existe'
             })
         }else{
-            //encriptar la contraseña
-            bcrypt.genSalt(10, (err,salt)=>{
-                bcrypt.hash(password, salt, (err, hash)=>{
                     const data ={
-                        nombre,
-                        apaterno,
-                        amaterno,
-                        email,
-                        telefono,
-                        password: hash
+                        Nombre,
+                        Apellidos,
+                        Email,
+                        Telefono,
+                        Edad,
+                        Cumple,
+                        Genero,
+                        Direccion,
+                        Tratamiento,
+                        TSangre
                     }
 
-                    setDoc(doc(usuarios,email),data).then(data=>{
+                    setDoc(doc(pacientes,Email),data).then(data=>{
                         res.json({
                             'alert':'success',
                             data
                         })
                     })
-                })
-            })
         }
     }).catch(error=>{
         res.json({
@@ -87,18 +85,18 @@ app.post('/new-user',(req,res)=>{
         })
     })
 })
-app.get('/get-users', async(req ,res)=>{
+app.get('/get-patients', async(req ,res)=>{
     try {
-        const usuarios =[];
-        const data = await collection(db, 'usuarios')
+        const pacientes =[];
+        const data = await collection(db, 'pacientes')
         const docs = await getDocs(data)
         docs.forEach((doc)=>{
-            usuarios.push(doc.data())
+            pacientes.push(doc.data())
         })
-            //console.log('@@@ usuarios =>',usuarios)
+            //console.log('@@@ pacientes =>',pacientes)
         res.json({
             'alert': 'success',
-            usuarios
+            pacientes
         })
         }catch(error){
         res.json({
@@ -108,9 +106,9 @@ app.get('/get-users', async(req ,res)=>{
     }
 })
 
-app.post('/delete-user',(req, res)=>{
-    const email=req.body.email
-    deleteDoc(doc(collection(db,'usuarios'), email))
+app.post('/delete-patient',(req, res)=>{
+    const Email=req.body.Email
+    deleteDoc(doc(collection(db,'pacientes'), Email))
     .then(data=>{
         res.json({
             'alert':'success'
@@ -124,13 +122,18 @@ app.post('/delete-user',(req, res)=>{
     })
 })
 
-app.post('/edit-user', async (req,res) =>{
-    const {nombre,apaterno,amaterno,telefono,password,email} =req.body
-    const edited = await updateDoc(doc(db, 'usuarios', email),{
-        nombre,
-        apaterno,
-        amaterno,
-        telefono
+app.post('/edit-patient', async (req,res) =>{
+    const {Nombre, Apellidos, Email, Telefono,Edad, Cumple, Genero, Direccion, Tratamiento, TSangre} =req.body
+    const edited = await updateDoc(doc(db, 'pacientes', Email),{
+        Nombre,
+        Apellidos,
+        Telefono,
+        Edad,
+        Cumple,
+        Genero,
+        Direccion,
+        Tratamiento,
+        TSangre
     })
 
     res.json({
@@ -138,11 +141,131 @@ app.post('/edit-user', async (req,res) =>{
         edited
     })
     /*
-    const data = await collection(db,'usuarios')
-    const docs = await getDoc(doc(data, email))
+    const data = await collection(db,'pacientes')
+    const docs = await getDoc(doc(data, Email))
     console.log('@@ doc =>', usuario)
     */
 })
+
+
+//rutas de trabajo para tabla pacientes
+app.post('/new_appointment',(req,res)=>{
+    let {Nombre, Email, Telefono, Edad, Genero, Cita, Hora, TipoCita, Status}=req.body
+    const generosPermitidos = ['male', 'female', 'other']
+    const OpCitas = ['Checkup', 'Surgery']
+    if(!Nombre.length){
+        res.json({
+            'alert':'Falta de agregar Nombre'
+        })
+    }else if(!Email.length){
+        res.json({
+            'alert':'Falta de agregar el usuario'
+        })
+    }else if (!generosPermitidos.includes(Genero)){
+        res.json({ error: 'Escoge una de las opciones de genero'
+    })
+    }else if (!OpCitas.includes(TipoCita)){
+        res.json({ error: 'Marca que tipo de cita requieres'
+    })
+}
+    Status = 'upcoming'
+    const citas = collection(db, 'citas')
+
+    getDoc(doc(citas,Email)).then(appointment =>{
+        if(appointment.exists()){
+            res.json({
+                'alert':'El usuario ya existe'
+            })
+        }else{
+                    const data ={
+                        Nombre, 
+                        Email, 
+                        Telefono, 
+                        Edad, 
+                        Genero, 
+                        Cita, 
+                        Hora, 
+                        TipoCita, 
+                        Status
+                    }
+
+                    setDoc(doc(citas,Email),data).then(data=>{
+                        res.json({
+                            'alert':'success',
+                            data
+                        })
+                    })
+        }
+    }).catch(error=>{
+        res.json({
+            'alert':'Error de Conexion'
+        })
+    })
+})
+app.get('/get-appointment', async(req ,res)=>{
+    try {
+        const citas =[];
+        const data = await collection(db, 'citas')
+        const docs = await getDocs(data)
+        docs.forEach((doc)=>{
+            citas.push(doc.data())
+        })
+            //console.log('@@@ citas =>',citas)
+        res.json({
+            'alert': 'success',
+            citas
+        })
+        }catch(error){
+        res.json({
+            'alert':'error getting data',
+            error
+        })
+    }
+})
+
+/*app.post('/delete-patient',(req, res)=>{
+    const Email=req.body.Email
+    deleteDoc(doc(collection(db,'pacientes'), Email))
+    .then(data=>{
+        res.json({
+            'alert':'success'
+        })
+    })
+    .catch(err =>{
+        res.json({
+            'alert':'error',
+            err
+        })
+    })
+})
+*/
+app.post('/edit-appointment', async (req,res) =>{
+    const {Nombre, Email, Telefono, Edad, Genero, Cita, Hora, TipoCita, Status} =req.body
+    Status= 'Cancelled'
+    const edited = await updateDoc(doc(db, 'citas', Email),{
+        Nombre,
+        Email,
+        Telefono,
+        Edad,
+        Genero,
+        Cita,
+        Hora,
+        TipoCita,
+        Status
+    })
+
+    res.json({
+        'alert':'edited',
+        edited
+    })
+    /*
+    const data = await collection(db,'pacientes')
+    const docs = await getDoc(doc(data, Email))
+    console.log('@@ doc =>', usuario)
+    */
+})
+
+
 //encender el servidor en modo escucha
 app.listen(5000,()=>{
     console.log('servidor trabajando: 5000')
